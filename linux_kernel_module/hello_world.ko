@@ -1,0 +1,27 @@
+// every kernel module should to include this file
+#include<linux/module.h>
+
+// this is module initialization entry point
+static int __init helloworld_init(void)
+{
+    //kernels printf
+    pr_info("Hello World \n");
+    return 0;
+}
+
+// this is module cleanup entry point
+static void __exit helloworld_cleanup(void)
+{
+    //kernels printf
+    pr_info("Bye \n");
+}
+
+// this is the registration of above entry points with the kernel
+module_init(helloworld_init);
+module_exit(helloworld_cleanup);
+
+// this is the descriptive information about the module
+MODULE_LICENSE("GPL"); //this module adheres to GPL licensing
+MODULE_AUTHOR("JCP");
+MODULE_DESCRIPTION("A Kernel module to print Hello World message");
+MODULE_INFO(board,"Beaglebone black revision C3");
