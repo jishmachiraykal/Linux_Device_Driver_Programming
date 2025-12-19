@@ -83,4 +83,18 @@ int major_no=MAJOR(device_number);
 
 ### Character device registration
 
+* To do a char device registration with the VFS, first we have to initialize a cdev structure
+```
+void cdev_init(struct cdev *cdev, const struct file_operations *fops); // *cdev is structure to initialize, *fops file operations for this device
+```
+
+* cdev_init is a Kernel API which is implemented in fs/char_dev.c
+
+* Next is to add a char device to the Kernel VFS by cdev_add
+```
+int cdev_add(struct cdev *p, dev_t dev, unsigned count); // *p is cdev structure for the device, dev is first device number for which the device is responsible and unsigned count is number of consecutive minor numbers corresponding to this device
+```
+
+### Character driver file operation methods
+
 *
