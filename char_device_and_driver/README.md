@@ -97,4 +97,23 @@ int cdev_add(struct cdev *p, dev_t dev, unsigned count); // *p is cdev structure
 
 ### Character driver file operation methods
 
-*
+* struct file_operations which can be found in include/linux/fs.h has support to llseek, read, write, open, release operation etc..
+
+* When fd=open("/dev/pcd",O_RDWR);, control goes to VFS and from there to device driver files. In the Kernel space, we have struct inode, struct cdev, struct file_ops, struct file
+
+* Each file should have its own inode object and it gets created for every func call.
+
+* When open function is called, it calls do_sys_open which then calls do_flip_open where 'file' object allocation happens
+```
+open --> do_sys_open --> do_flip_open --> do_dentry_open --> chrdev_open --> our_driver_open_method
+```
+
+* Details about chrdev_open function can be found in root/fs/char_dev.c
+
+* When device file gets created
+```
+1. create device file using cdev
+2. inode object gets created in the memory and inode's i_rdev field is initialized with device number
+3. inode object i_fop field is set to dummy default file operations(def_chr_fops)
+```
+
