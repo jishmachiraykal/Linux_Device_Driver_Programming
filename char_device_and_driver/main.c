@@ -175,7 +175,6 @@ unreg_chrdev:
 out:
     pr_info("Module insertion failed\n");
     return ret;
-
 }
 
 static void __exit pcd_driver_cleanup(void)
