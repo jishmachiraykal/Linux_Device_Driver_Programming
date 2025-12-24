@@ -37,4 +37,4 @@ Returns 0 on success or number of bytes could be read
 
 ### Read Method Implementation
 
-*
+* Go main.c in ldd/custom_drivers/001pseudo_char_driver/main.c and the read method

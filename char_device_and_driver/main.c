@@ -22,7 +22,24 @@ loff_t pcd_lseek (struct file *filp, loff_t off, int whence){
 }
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos){
     pr_info("Read requested for %zu bytes\n",count);
-    return 0;
+    pr_info("Current file position = %lld\n", *f_pos);
+
+    /* Adjust the count */
+    if((*f_pos + count) > DEV_MEM_SIZE)
+        count = DEV_MEM_SIZE - *f_pos;
+        
+    /* Copy to user */
+    if(copy_to_user(buff,device_buffer[*f_pos],count)){
+        return -EFAULT;
+    }    
+        
+    /* Update the current file position */
+    *f_pos += count;
+
+    pr_info("Number of bytes successfully read = %zu\n", count);
+    pr_info("Updated file position = %lld\n", *f_pos);
+    /* Return the number of bytes successfully read */
+    return count;
 }
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos){
     pr_info("Write requested for %zu bytes\n",count);
