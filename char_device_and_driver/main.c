@@ -3,10 +3,17 @@
 #include<linux/cdev.h>
 #include<linux/device.h>
 #include<linux/kdev_t.h>
+#include<linux/uaccess.h>
 
 #undef pr_fmt//undefining if fmt is already defined
 #define pr_fmt(fmt) "%s: " fmt,__func__
 #define DEV_MEM_SIZE 512
+
+loff_t pcd_lseek (struct file *filp, loff_t off, int whence);
+ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
+ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos);
+int pcd_open (struct inode *inode, struct file *filp);
+int pcd_release (struct inode *inode, struct file *filp);
 
 char device_buffer[DEV_MEM_SIZE];
 
@@ -29,7 +36,7 @@ ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_
         count = DEV_MEM_SIZE - *f_pos;
         
     /* Copy to user */
-    if(copy_to_user(buff,device_buffer[*f_pos],count)){
+    if(copy_to_user(buff,&device_buffer[*f_pos],count)){
         return -EFAULT;
     }    
         
@@ -43,7 +50,26 @@ ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_
 }
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos){
     pr_info("Write requested for %zu bytes\n",count);
-    return 0;
+    pr_info("Current file position = %lld\n", *f_pos);
+
+    /* Adjust the count */
+    if((*f_pos + count) > DEV_MEM_SIZE)
+        count = DEV_MEM_SIZE - *f_pos;
+        
+    if(!count)
+        return ENOMEM;    
+    /* Copy from user */
+    if(copy_from_user(&device_buffer[*f_pos],buff,count)){
+        return -EFAULT;
+    }    
+        
+    /* Update the current file position */
+    *f_pos += count;
+
+    pr_info("Number of bytes successfully written = %zu\n", count);
+    pr_info("Updated file position = %lld\n", *f_pos);
+    /* Return the number of bytes successfully written */
+    return count;
 }
 int pcd_open (struct inode *inode, struct file *filp){
     pr_info("Open was successful\n");
@@ -61,6 +87,7 @@ struct file_operations pcd_fops = {
     .read = pcd_read,
     .llseek = pcd_lseek,
     .release = pcd_release,
+    /* might not be needed in 6.0+ Kernel version*/
     .owner = THIS_MODULE
 };
 
@@ -80,11 +107,12 @@ static int __init pcd_driver_init(void)
 	cdev_init(&pcd_cdev,&pcd_fops);
 
     /* 3. Register a device(cdev structure) with VFS*/
+    /* THIS_MODULE is might not be needed in 6.0+ Kernel version*/
     pcd_cdev.owner=THIS_MODULE;
     cdev_add(&pcd_cdev,device_number,1); // registering one device
 
     /* 4. Create device class under /sys/class*/
-    class_pcd = class_create(THIS_MODULE, "pcd_class");
+    class_pcd = class_create("pcd_class");
 
     /* 5. Populate sysfs with device information*/
 	device_pcd = device_create(class_pcd,NULL,device_number,NULL,"pcd"); // "pcd" name will appear in the dev directory
