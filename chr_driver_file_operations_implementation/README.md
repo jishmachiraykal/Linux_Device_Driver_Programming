@@ -64,3 +64,51 @@ ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, lof
 * In older kernel version(OSD6) struct class *class_create(struct module *owner, const char *name); was supported but in the latest Kernel(6.+) version(OSD8) is struct class *class_create(const char *name);. So when you pass THIS_MODULE, the compiler complains because it expects a const char *, not a struct module *. To fix this THIS_MODULE is removed from class_pcd = class_create(THIS_MODULE, "pcd_class"); and then compiled
 
 * Also function prototypes were added after the macros def
+
+### lseek method
+
+* lseek functions:
+```
+loff_t pcd_lseek (struct file *filp, loff_t off, int whence){
+    pr_info("lseek requested\n");
+    return 0;
+}
+
+If whence=SEEK_SET
+flip->f_pos=offset
+
+If whence=SEEK_CUR
+flip->f_pos=flip->f_pos+offset
+
+If whence=SEEK_END
+flip->f_pos=DEV_MEM_SIZE+offset
+```
+
+### lseek method implementation
+
+* Make the changes in main.c
+
+### Testing pseudo char driver
+
+* Steps are as follows:
+```
+1. make host
+2. sudo -s
+3. insmod main.ko
+4. dmesg
+//writing to the device memory
+5. echo "Hello, Hi" > /dev/pcd
+6. dmesg
+//reading from the device memory
+7. cat /dev/pc // cat uses 131072 to read application which can be seen in dmesg
+8. dmesg
+//lseek testing
+9. touch testfile
+10. vi touchfile //add some text of large size
+11. cp testfile /dev/pcd //will get some error saying cp: error writing '/dev/pcd': Bad address due to large file size than 512 bytes
+12. dmesg | tail
+```
+
+### Error handling
+
+* Do the changes related to error handling(goto impl) in main.c init function
